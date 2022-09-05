@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -20,6 +21,21 @@ const clientSecret = ""
 
 var client http.Client
 var token string
+
+type OauthResponse struct {
+	URI   string `json:"redirect_uri,omitempty"`
+	Token string `json:"access_token,omitempty"`
+}
+
+type ApiResponse struct {
+	Response string        `json:"response,omitempty"`
+	Error    ErrorResponse `json:"error,omitempty"`
+}
+
+type ErrorResponse struct {
+	ErrorCode    int    `json:"error_code,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
+}
 
 func main() {
 	cookieJar, err := cookiejar.New(nil)
@@ -60,16 +76,12 @@ func main() {
 		Path:     "token",
 		RawQuery: oauthQuery.Encode(),
 	}
-
-	oauthTokenResponseText := getBytesFromResponse(oauthUrl.String())
-	accessTokenRegex := regexp.MustCompile("access_token.:.([^\"]+)")
-	tokenMatches := accessTokenRegex.FindSubmatch(oauthTokenResponseText)
-	if len(tokenMatches) == 2 {
-		token = string((accessTokenRegex.FindSubmatch(oauthTokenResponseText))[1])
+	oauthResponse := &OauthResponse{}
+	fillStructFromResponse(oauthUrl.String(), oauthResponse)
+	if oauthResponse.Token != "" {
+		token = oauthResponse.Token
 	} else { // 2fa required
-		redirectReg := regexp.MustCompile("redirect_uri.:.([^\"]+)")
-		authUrl := string((redirectReg.FindSubmatch(oauthTokenResponseText))[1])
-		authHtml := getBytesFromResponse(authUrl)
+		authHtml := getBytesFromResponse(oauthResponse.URI)
 		authHashReg := regexp.MustCompile("authcheck_code&hash=([^\"]+)")
 		hash := string((authHashReg.FindSubmatch(authHtml))[1])
 		fmt.Print("Enter 2fa code: ")
@@ -162,6 +174,24 @@ func getBytesFromResponse(url string) []byte {
 		log.Fatal("не удалось прочитать респонс из "+url+"\n", err)
 	}
 	return text
+}
+
+func fillStructFromResponse(url string, obj interface{}) {
+	resp, err := client.Get(url)
+	if err != nil {
+		log.Fatal("ошибка сети при вызове "+url+"\n", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 401 {
+		log.Fatal("ошибка авторизации")
+	}
+	if resp.StatusCode != 200 {
+		log.Fatal("ошибка вызова "+url+"\n", strconv.Itoa(resp.StatusCode))
+	}
+	err = json.NewDecoder(resp.Body).Decode(obj)
+	if err != nil {
+		log.Fatal("не удалось распарсить ответ "+url+"\n", err)
+	}
 }
 
 func doApiCall(url string) bool {

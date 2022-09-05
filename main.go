@@ -136,10 +136,10 @@ func main() {
 				RawQuery: query.Encode(),
 			}
 			ok := doApiCall(uri.String())
-			if !ok {
-				log.Println("не удалось удалить: ", string((gr[0])[33:]))
-			} else {
+			if ok {
 				log.Println("ok")
+			} else {
+				log.Println("не удалось удалить: ", string((gr[0])[33:]))
 			}
 		}
 	}
@@ -175,22 +175,19 @@ func doApiCall(url string) bool {
 	if len(errorsMat) == 2 {
 		errorCode = string((errorsMat)[1])
 	}
-	if errorCode == "211" {
+	switch errorCode {
+	case "211":
 		log.Println("уже удалено или недоступно (211)")
 		return false
-	}
-	if errorCode == "15" {
+	case "15":
 		log.Println("⛔ стена недоступна! (15) ⛔ контент может быть использован против вас ⛔ проверьте контент по ссылке ⛔")
 		return false
-	}
-	if errorCode == "30" {
+	case "30":
 		log.Println("⛔ контент на приватной стене, добавьтесь в друзья (30) ⛔ контент может быть использован против вас ⛔ проверьте контент по ссылке ⛔")
 		return false
-	}
-	if errorCode == "9" {
+	case "9":
 		log.Fatal("API больше недоступно из-за большого количества запросов, попробуйте завтра")
-	}
-	if errorCode == "6" {
+	case "6":
 		time.Sleep(1 * time.Second)
 		return doApiCall(url)
 	}

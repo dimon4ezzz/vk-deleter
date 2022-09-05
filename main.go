@@ -18,6 +18,7 @@ import (
 
 const clientId = ""
 const clientSecret = ""
+const apiVersion = "5.131"
 
 var client http.Client
 var token string
@@ -50,7 +51,7 @@ func main() {
 	oauthQuery.Set("client_id", clientId)
 	oauthQuery.Add("client_secret", clientSecret)
 	oauthQuery.Add("grant_type", "password")
-	oauthQuery.Add("version", "5.131")
+	oauthQuery.Add("version", apiVersion)
 	oauthQuery.Add("2fa_supported", "1")
 
 	reader := bufio.NewReader(os.Stdin)
@@ -140,7 +141,7 @@ func main() {
 			query.Set("owner_id", string(gr[1]))
 			query.Add("comment_id", string(gr[2]))
 			query.Add("access_token", token)
-			query.Add("v", "5.131")
+			query.Add("v", apiVersion)
 			uri := &url.URL{
 				Scheme:   "https",
 				Host:     "api.vk.com",

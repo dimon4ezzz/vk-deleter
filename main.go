@@ -60,7 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatal("не удалось прочесть логин\n", err)
 	}
-	fmt.Println("")
 	oauthQuery.Add("username", strings.TrimSpace(login))
 
 	fmt.Print("Enter VK password: ")
@@ -68,7 +67,6 @@ func main() {
 	if err != nil {
 		log.Fatal("не удалось прочесть пароль\n", err)
 	}
-	fmt.Println("")
 	oauthQuery.Add("password", strings.TrimSpace(password))
 
 	oauthUrl := &url.URL{

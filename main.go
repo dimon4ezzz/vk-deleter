@@ -151,7 +151,7 @@ func getBytesFromResponse(url string) []byte {
 		log.Fatal("ошибка сети при вызове "+url+"\n", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == 400 {
+	if resp.StatusCode == 401 {
 		log.Fatal("ошибка авторизации")
 	}
 	if resp.StatusCode != 200 {

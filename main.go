@@ -166,6 +166,9 @@ func getBytesFromResponse(url string) []byte {
 
 func doApiCall(url string) bool {
 	resp := getBytesFromResponse(url)
+	if string(resp) == "{\"response\":1}" {
+		return true
+	}
 	errorsReg := regexp.MustCompile("error_code.:(\\d+),")
 	errorsMat := errorsReg.FindSubmatch(resp)
 	errorCode := ""
@@ -190,9 +193,6 @@ func doApiCall(url string) bool {
 	if errorCode == "6" {
 		time.Sleep(1 * time.Second)
 		return doApiCall(url)
-	}
-	if string(resp) == "{\"response\":1}" {
-		return true
 	}
 	log.Println(string(resp))
 	return false

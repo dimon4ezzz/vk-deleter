@@ -140,13 +140,7 @@ func main() {
 			query.Add("comment_id", string(gr[2]))
 			query.Add("access_token", token)
 			query.Add("v", apiVersion)
-			uri := &url.URL{
-				Scheme:   "https",
-				Host:     "api.vk.com",
-				Path:     "method/wall.deleteComment",
-				RawQuery: query.Encode(),
-			}
-			ok := doApiCall(uri.String())
+			ok := doApiCall("wall.deleteComment", query)
 			if ok {
 				log.Println("ok")
 			} else {
@@ -193,33 +187,34 @@ func fillStructFromResponse(url string, obj interface{}) {
 	}
 }
 
-func doApiCall(url string) bool {
-	resp := getBytesFromResponse(url)
-	if string(resp) == "{\"response\":1}" {
+func doApiCall(method string, query url.Values) bool {
+	uri := &url.URL{
+		Scheme:   "https",
+		Host:     "api.vk.com",
+		Path:     "method/" + method,
+		RawQuery: query.Encode(),
+	}
+	apiResponse := &ApiResponse{}
+	fillStructFromResponse(uri.String(), apiResponse)
+	if apiResponse.Response != "" {
 		return true
 	}
-	errorsReg := regexp.MustCompile("error_code.:(\\d+),")
-	errorsMat := errorsReg.FindSubmatch(resp)
-	errorCode := ""
-	if len(errorsMat) == 2 {
-		errorCode = string((errorsMat)[1])
-	}
-	switch errorCode {
-	case "211":
+	switch apiResponse.Error.ErrorCode {
+	case 211:
 		log.Println("уже удалено или недоступно (211)")
 		return false
-	case "15":
+	case 15:
 		log.Println("⛔ стена недоступна! (15) ⛔ контент может быть использован против вас ⛔ проверьте контент по ссылке ⛔")
 		return false
-	case "30":
+	case 30:
 		log.Println("⛔ контент на приватной стене, добавьтесь в друзья (30) ⛔ контент может быть использован против вас ⛔ проверьте контент по ссылке ⛔")
 		return false
-	case "9":
+	case 9:
 		log.Fatal("API больше недоступно из-за большого количества запросов, попробуйте завтра")
-	case "6":
+	case 6:
 		time.Sleep(1 * time.Second)
-		return doApiCall(url)
+		return doApiCall(method, query)
 	}
-	log.Println(string(resp))
+	log.Println("ошибка " + strconv.Itoa(apiResponse.Error.ErrorCode) + ": " + apiResponse.Error.ErrorMessage)
 	return false
 }
